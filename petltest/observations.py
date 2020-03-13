@@ -25,7 +25,7 @@ from petltest.sensors import add_sensor
 
 
 def extract_waterlevels_continuous(sensor, lid):
-    if sensor=='Pressure':
+    if sensor == 'Pressure':
         sql = f'select * from dbo.WaterLevelsContinuous_Pressure ' \
               f'join dbo.Location on dbo.Location.PointID = dbo.WaterLevelsContinuous_Pressure.PointID ' \
               f'where Locationid=%s'
@@ -53,8 +53,14 @@ def etl_observations():
         obj = json.load(rfile)
 
     # add sensors
-    sensors = {'Pressure': add_sensor('Pressure'),
-               'Acoustic': add_sensor('Acoustic')}
+    sensors = {'Pressure': add_sensor('WaterLevel_Pressure',
+                                      {'description': 'Diver Pressure Sensor',
+                                       'encodingType': 'application/json',
+                                       'metadata': {'link': 'foo'}}),
+               'Acoustic': add_sensor('WaterLevel_Acoustic',
+                                      {'description': 'Acoustic Sensor',
+                                       'encodingType': 'application/json',
+                                       'metadata': {'link': 'bar'}})}
 
     #  tag, column name
     tags = [('WaterHead', 'WaterHead',

@@ -13,7 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
+from petltest import get_item_by_name, post_item
 
-def add_sensor(name):
-    pass
+
+def add_sensor(name, sensor):
+    # does this sensor already exist
+    sensor_id = get_item_by_name('Sensors', name)
+    if sensor_id is None:
+        sensor['name'] = name
+        # add the sensor
+        sensor_id = post_item('Sensors', sensor)
+
+    return sensor_id
 # ============= EOF =============================================
