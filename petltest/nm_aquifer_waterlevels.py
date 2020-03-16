@@ -20,12 +20,16 @@ import petl
 import pymssql
 import requests
 
+from petltest.datastreams import delete_datastreams
 from petltest.observations import etl_observations
+from petltest.things import etl_things
 
 
 def main():
-    etl_observations()
     # etl_things()
+    # delete_datastreams((1,2,3,4,5,6,7))
+    etl_observations()
+
     # cleanup()
 
 

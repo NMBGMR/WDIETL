@@ -18,7 +18,7 @@ import json
 import petl
 import requests
 
-from petltest import get_nm_aquifier_connection, GOST_URL
+from petltest import get_nm_aquifier_connection, GOST_URL, post_item, get_item_by_name
 
 
 def extract_location():
@@ -42,31 +42,27 @@ def make_thing(ld):
             }
 
 
-def post_thing(thing):
-    resp = requests.post(f'{GOST_URL}/Things', json=thing)
-
-    if resp.status_code != 201:
-        print(thing, resp.json())
-    else:
-        return resp.json()['@iot.id']
-
-
 def load_things(table):
     # create a point_id: @iot.thing.id mapping for convienence
     mapping = {}
-    for t in petl.dicts(table):
-        thing = make_thing(t)
-        tid = post_thing(thing)
+    for l in petl.dicts(table):
+        thing = make_thing(l)
+        if get_item_by_name('Things', thing['name']):
+            print(f"Thing: name={thing['name']} already exists skipping")
+            continue
+
+        tid = post_item('Things', thing)
         if tid is not None:
-            print(f"loaded {t['Locationid']}, {t['PointID']} as {tid}")
-            mapping[str(t['Locationid'])] = tid
+            print(f"loaded {l['Locationid']}, {l['PointID']} as {tid}")
+            mapping[str(l['Locationid'])] = tid
 
     return mapping
 
 
 def dump_thing_mapping(obj):
-    with open('thing_mapping.json', 'w') as wfile:
-        json.dump(obj, wfile)
+    if obj:
+        with open('thing_mapping.json', 'w') as wfile:
+            json.dump(obj, wfile)
 
 
 def etl_things():

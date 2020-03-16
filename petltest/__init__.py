@@ -22,7 +22,9 @@ db_configs = {'nm_aquifer': {'database': 'NM_Aquifer',
                              'password': environ.get('NM_AQUIFER_DB_PWD'),
                              'server': environ.get('NM_AQUIFER_DB_HOST')}}
 
-GOST_URL = 'http://localhost:8080/v1.0'
+
+GOST_URL_ROOT = environ.get('GOST_URL_ROOT', 'localhost:8080')
+GOST_URL = f'http:/{(GOST_URL_ROOT)}/v1.0'
 
 
 def get_nm_aquifier_connection():
@@ -32,9 +34,15 @@ def get_nm_aquifier_connection():
 
 
 def post_item(uri,  payload):
+
     resp = requests.post(f'{GOST_URL}/{uri}', json=payload)
-    if resp == 201:
+    if resp.status_code == 201:
         return resp.json()['@iot.id']
+    else:
+        print('failed to post')
+        print('============================')
+        print(resp.status_code, resp.json())
+        print('============================')
 
 
 def get_item_by_name(uri, name):
@@ -43,5 +51,9 @@ def get_item_by_name(uri, name):
         return resp.json()['value'][0]['@iot.id']
     except (KeyError, IndexError):
         pass
+
+
+def make_id(i):
+    return {'@iot.id': i}
 
 # ============= EOF =============================================

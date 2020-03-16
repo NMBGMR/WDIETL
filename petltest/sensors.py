@@ -22,6 +22,7 @@ def add_sensor(name, sensor):
     if sensor_id is None:
         sensor['name'] = name
         # add the sensor
+        print('adding', sensor)
         sensor_id = post_item('Sensors', sensor)
 
     return sensor_id

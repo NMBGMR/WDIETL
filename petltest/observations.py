@@ -16,10 +16,13 @@
 import json
 
 import petl
+import pytz
 import requests
 
-from petltest import get_nm_aquifier_connection, GOST_URL
+from petltest import get_nm_aquifier_connection, GOST_URL, post_item, get_item_by_name, make_id
 from petltest.datastreams import add_datastream
+from petltest.import_models import WATER_HEAD, WATER_HEAD_ADJUSTED, WATER_TEMPERATURE, WATER_CONDUCTIVITY, \
+    DEPTH_TO_WATER, AIR_TEMPERATURE
 from petltest.observed_properties import add_observed_property
 from petltest.sensors import add_sensor
 
@@ -28,24 +31,45 @@ def extract_waterlevels_continuous(sensor, lid):
     if sensor == 'Pressure':
         sql = f'select * from dbo.WaterLevelsContinuous_Pressure ' \
               f'join dbo.Location on dbo.Location.PointID = dbo.WaterLevelsContinuous_Pressure.PointID ' \
-              f'where Locationid=%s'
+              f'where Locationid=%s and QCed=1 and PublicRelease=1'
     elif sensor == 'Acoustic':
         sql = f'select * from dbo.WaterLevelsContinuous_Acoustic ' \
               f'join dbo.Location on dbo.Location.PointID = dbo.WaterLevelsContinuous_Acoustic.PointID ' \
-              f'where Locationid=%s'
+              f'where Locationid=%s and PublicRelease=1'
 
     table = petl.fromdb(get_nm_aquifier_connection(), sql, lid)
-    return table
+
+    return petl.sort(table, 'DateMeasured')
 
 
-def make_observation(wti):
-    pass
+timezone = pytz.timezone('America/Denver')
 
 
-def add_observations(datastream_id, wt):
-    for wti in petl.dicts(wt):
-        obs = make_observation(wti)
-        requests.post(f'{GOST_URL}/Datastreams({datastream_id})/Observations', json=obs)
+def add_observations(datastream_id, wt, col):
+    for i, wti in enumerate(petl.dicts(wt)):
+        # make the observation
+
+        if i and not i % 100:
+            print(f'adding observation {i}')
+
+        t = timezone.localize(wti['DateMeasured'])
+        v = wti[col]
+
+        payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),
+                   'resultTime': t.isoformat(timespec='milliseconds'),
+                   'result': v,
+                   'Datastream': make_id(datastream_id)
+                   }
+        post_item(f'Observations', payload)
+
+
+def get_datastream(thing_id, name):
+    uri = f'Things({thing_id})/Datastreams'
+    dsid = get_item_by_name(uri, name)
+    if dsid is not None:
+        print(f'Datastream already exists skipping {thing_id}, {name}')
+
+    return dsid
 
 
 def etl_observations():
@@ -55,52 +79,50 @@ def etl_observations():
     # add sensors
     sensors = {'Pressure': add_sensor('WaterLevel_Pressure',
                                       {'description': 'Diver Pressure Sensor',
-                                       'encodingType': 'application/json',
-                                       'metadata': {'link': 'foo'}}),
+                                       'encodingType': 'application/pdf',
+                                       'metadata': 'foo'}),
                'Acoustic': add_sensor('WaterLevel_Acoustic',
                                       {'description': 'Acoustic Sensor',
-                                       'encodingType': 'application/json',
-                                       'metadata': {'link': 'bar'}})}
+                                       'encodingType': 'application/pdf',
+                                       'metadata': 'bar'})}
 
     #  tag, column name
-    tags = [('WaterHead', 'WaterHead',
-             {'description': 'Water Head above sensor',
-              'definition': 'No Definition'}),
-            ("WaterHeadAdjusted", 'WaterHeadAdjusted',
-             {'description': 'Adjusted Water Head above sensor',
-              'definition': 'No Definition'}),
-            ('WaterTemperature', 'TemperatureWater',
-             {'description': 'Temperature of the water in the well',
-              'definition': 'No Definition'}),
-            ('WaterConductivity', 'CONDDL',
-             {'description': 'Electrical conductivity of the water',
-              'definition': 'No Definition'}),
-            ('DepthToWater', 'DepthToWaterBGS',
-             {'description': 'Depth to water below the ground surface',
-              'definition': 'No Definition'}),
-            ('AirTemperature', 'TemperatureAir',
-             {'description': 'Air temperature at the surface',
-              'definition': 'No Definition'})]
+    tags = [WATER_HEAD,
+            WATER_HEAD_ADJUSTED,
+            WATER_TEMPERATURE,
+            WATER_CONDUCTIVITY,
+            DEPTH_TO_WATER,
+            AIR_TEMPERATURE
+            ]
 
     observed_properties = {}
     # add the observed properties
-    for t, _, op in tags:
-        observed_properties[t] = add_observed_property(t, op)
+    for m in tags:
+        observed_properties[m.name] = add_observed_property(m.name, m.observed_property_payload)
 
-    for k, thing_id in obj.items():
-        print(k, thing_id)
+    for i, (k, thing_id) in enumerate(obj.items()):
+        if i > 40:
+            break
+
+        print(i, k, thing_id)
         for sensor in ('Pressure', 'Acoustic'):
             # are there waterlevels in the database for this Thing/Locationid
             wt = extract_waterlevels_continuous(sensor, k)
-            if petl.nrows(wt):
+            nrows = petl.nrows(wt)
+            if nrows:
+                print(f'Add {sensor} observations. count={nrows}')
                 header = petl.header(wt)
 
                 # add datastreams to thing
-                for t, col, _ in tags:
-                    if col in header:
-                        ds_id = add_datastream(thing_id, observed_properties[t], sensors[sensor])
+                for m in tags:
+                    if m.mapped_column in header:
+                        print(f'Adding datastream {observed_properties[m.name]}, {sensors[sensor]}')
 
-                        # add observations to datastream
-                        add_observations(ds_id, wt, col)
+                        if not get_datastream(thing_id, m.datastream_payload['name']):
+                            ds_id = add_datastream(thing_id, observed_properties[m.name], sensors[sensor],
+                                                   m.datastream_payload)
+
+                            # add observations to datastream
+                            add_observations(ds_id, wt, m.mapped_column)
 
 # ============= EOF =============================================
