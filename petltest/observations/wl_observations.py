@@ -23,6 +23,7 @@ from petltest import get_nm_aquifier_connection, GOST_URL, post_item, get_item_b
 from petltest.datastreams import add_datastream
 from petltest.import_models import WATER_HEAD, WATER_HEAD_ADJUSTED, WATER_TEMPERATURE, WATER_CONDUCTIVITY, \
     DEPTH_TO_WATER, AIR_TEMPERATURE
+from petltest.observations import get_datastream, MT_TIMEZONE
 from petltest.observed_properties import add_observed_property
 from petltest.sensors import add_sensor
 
@@ -42,9 +43,6 @@ def extract_waterlevels_continuous(sensor, lid):
     return petl.sort(table, 'DateMeasured')
 
 
-timezone = pytz.timezone('America/Denver')
-
-
 def add_observations(datastream_id, wt, col):
     for i, wti in enumerate(petl.dicts(wt)):
         # make the observation
@@ -52,7 +50,7 @@ def add_observations(datastream_id, wt, col):
         if i and not i % 100:
             print(f'adding observation {i}')
 
-        t = timezone.localize(wti['DateMeasured'])
+        t = MT_TIMEZONE.localize(wti['DateMeasured'])
         v = wti[col]
 
         payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),
@@ -63,16 +61,8 @@ def add_observations(datastream_id, wt, col):
         post_item(f'Observations', payload)
 
 
-def get_datastream(thing_id, name):
-    uri = f'Things({thing_id})/Datastreams'
-    dsid = get_item_by_name(uri, name)
-    if dsid is not None:
-        print(f'Datastream already exists skipping {thing_id}, {name}')
 
-    return dsid
-
-
-def etl_observations():
+def etl_wl_observations():
     with open('thing_mapping.json', 'r') as rfile:
         obj = json.load(rfile)
 
@@ -86,7 +76,6 @@ def etl_observations():
                                        'encodingType': 'application/pdf',
                                        'metadata': 'bar'})}
 
-    #  tag, column name
     tags = [WATER_HEAD,
             WATER_HEAD_ADJUSTED,
             WATER_TEMPERATURE,

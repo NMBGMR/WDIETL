@@ -19,6 +19,7 @@ import petl
 import requests
 
 from petltest import get_nm_aquifier_connection, GOST_URL, post_item, get_item_by_name
+from petltest.things import dump_thing_mapping
 
 
 def extract_location():
@@ -59,15 +60,9 @@ def load_things(table):
     return mapping
 
 
-def dump_thing_mapping(obj):
-    if obj:
-        with open('thing_mapping.json', 'w') as wfile:
-            json.dump(obj, wfile)
-
-
 def etl_things():
     location_table = extract_location()
     thing_mapping = load_things(location_table)
-    dump_thing_mapping(thing_mapping)
+    dump_thing_mapping(thing_mapping, 'wl_thing_mapping')
 
 # ============= EOF =============================================

@@ -29,6 +29,10 @@ DEGC = {'name': 'Degree Celsius',
         'symbol': 'degC',
         'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius'}
 
+PPM = {'name': 'Parts Per Million',
+       'symbol': 'PPM',
+       'definition': 'http://www.qudt.org/qudt/owl/1.0.0'}
+
 WATER_HEAD = BaseModel('WaterHead', 'WaterHead',
                        {'description': 'Water Head above sensor',
                         'definition': 'No Definition'},
@@ -91,4 +95,24 @@ AIR_TEMPERATURE = BaseModel('AirTemperature', 'TemperatureAir',
                              'unitOfMeasurement': DEGC
                              }
                             )
+
+ARSENIC = BaseModel('Arsenic', 'Arsenic',
+                    {'description': 'Arsenic',
+                     'definition': 'No Definition'},
+                    {'name': 'Arsenic DS',
+                     'description': 'Datastream for Arsenic',
+                     'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+                     'unitOfMeasurement': PPM
+                     }
+                    )
+
+CA = BaseModel('Calcium', 'Ca',
+               {'description': 'Calcium',
+                'definition': 'No Definition'},
+               {'name': 'Calcium DS',
+                'description': 'Datastream for Calcium',
+                'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+                'unitOfMeasurement': PPM
+                }
+               )
 # ============= EOF =============================================

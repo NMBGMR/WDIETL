@@ -20,11 +20,20 @@ import requests
 db_configs = {'nm_aquifer': {'database': 'NM_Aquifer',
                              'user': environ.get('NM_AQUIFER_DB_USER'),
                              'password': environ.get('NM_AQUIFER_DB_PWD'),
-                             'server': environ.get('NM_AQUIFER_DB_HOST')}}
-
+                             'server': environ.get('NM_AQUIFER_DB_HOST')},
+              'nm_water_quality': {'database': 'NM_Water_Quality',
+                                   'user': environ.get('NM_AQUIFER_DB_USER'),
+                                   'password': environ.get('NM_AQUIFER_DB_PWD'),
+                                   'server': environ.get('NM_AQUIFER_DB_HOST')}}
 
 GOST_URL_ROOT = environ.get('GOST_URL_ROOT', 'localhost:8080')
-GOST_URL = f'http:/{(GOST_URL_ROOT)}/v1.0'
+GOST_URL = f'http://{(GOST_URL_ROOT)}/v1.0'
+
+
+def get_nm_quality_connection():
+    config = db_configs['nm_water_quality']
+    connection = pymssql.connect(**config)
+    return connection
 
 
 def get_nm_aquifier_connection():
@@ -33,8 +42,7 @@ def get_nm_aquifier_connection():
     return connection
 
 
-def post_item(uri,  payload):
-
+def post_item(uri, payload):
     resp = requests.post(f'{GOST_URL}/{uri}', json=payload)
     if resp.status_code == 201:
         return resp.json()['@iot.id']
