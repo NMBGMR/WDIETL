@@ -21,7 +21,7 @@ import requests
 
 from petltest import get_nm_aquifier_connection, GOST_URL, post_item, get_item_by_name, make_id
 from petltest.datastreams import add_datastream
-from petltest.import_models import WATER_HEAD, WATER_HEAD_ADJUSTED, WATER_TEMPERATURE, WATER_CONDUCTIVITY, \
+from petltest.models.wl_models import WATER_HEAD, WATER_HEAD_ADJUSTED, WATER_TEMPERATURE, WATER_CONDUCTIVITY, \
     DEPTH_TO_WATER, AIR_TEMPERATURE
 from petltest.observations import get_datastream, MT_TIMEZONE
 from petltest.observed_properties import add_observed_property
@@ -43,26 +43,29 @@ def extract_waterlevels_continuous(sensor, lid):
     return petl.sort(table, 'DateMeasured')
 
 
-def add_observations(datastream_id, wt, col):
-    for i, wti in enumerate(petl.dicts(wt)):
+def add_observations(datastream_id, wt, col, ntotal):
+    cnt = 0
+    for wti in petl.dicts(wt):
         # make the observation
 
-        if i and not i % 100:
-            print(f'adding observation {i}')
+        if cnt and not cnt % 100:
+            print(f'adding observation {cnt}/{ntotal}')
 
         t = MT_TIMEZONE.localize(wti['DateMeasured'])
         v = wti[col]
-
-        payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),
-                   'resultTime': t.isoformat(timespec='milliseconds'),
-                   'result': v,
-                   'Datastream': make_id(datastream_id)
-                   }
-        post_item(f'Observations', payload)
-
+        if v is not None:
+            payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),
+                       'resultTime': t.isoformat(timespec='milliseconds'),
+                       'result': v,
+                       'Datastream': make_id(datastream_id)
+                       }
+            post_item(f'Observations', payload)
+            cnt += 1
 
 
 def etl_wl_observations():
+    add_obs_to_existing_ds = False
+
     with open('thing_mapping.json', 'r') as rfile:
         obj = json.load(rfile)
 
@@ -75,7 +78,7 @@ def etl_wl_observations():
                                       {'description': 'Acoustic Sensor',
                                        'encodingType': 'application/pdf',
                                        'metadata': 'bar'})}
-
+    #
     tags = [WATER_HEAD,
             WATER_HEAD_ADJUSTED,
             WATER_TEMPERATURE,
@@ -107,10 +110,15 @@ def etl_wl_observations():
                     if m.mapped_column in header:
                         print(f'Adding datastream {observed_properties[m.name]}, {sensors[sensor]}')
 
-                        if not get_datastream(thing_id, m.datastream_payload['name']):
+                        ds_id = get_datastream(thing_id, m.datastream_payload['name'])
+                        add_obs = True
+                        if not ds_id:
                             ds_id = add_datastream(thing_id, observed_properties[m.name], sensors[sensor],
                                                    m.datastream_payload)
+                        else:
+                            add_obs = add_obs_to_existing_ds
 
+                        if ds_id and add_obs:
                             # add observations to datastream
                             add_observations(ds_id, wt, m.mapped_column)
 

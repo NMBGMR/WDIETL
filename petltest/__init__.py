@@ -25,8 +25,13 @@ db_configs = {'nm_aquifer': {'database': 'NM_Aquifer',
                                    'user': environ.get('NM_AQUIFER_DB_USER'),
                                    'password': environ.get('NM_AQUIFER_DB_PWD'),
                                    'server': environ.get('NM_AQUIFER_DB_HOST')}}
+DEBUG = True
 
-GOST_URL_ROOT = environ.get('GOST_URL_ROOT', 'localhost:8080')
+if DEBUG:
+    GOST_URL_ROOT = 'localhost:8080'
+else:
+    GOST_URL_ROOT = environ.get('GOST_URL_ROOT', 'localhost:8080')
+
 GOST_URL = f'http://{(GOST_URL_ROOT)}/v1.0'
 
 

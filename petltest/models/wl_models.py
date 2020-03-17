@@ -13,25 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-
-class BaseModel():
-    def __init__(self, name, mapped_column, ob, ds):
-        self.name = name
-        self.mapped_column = mapped_column
-        self.observed_property_payload = ob
-        self.datastream_payload = ds
-
-
-FOOT = {'name': 'Foot',
-        'symbol': 'ft',
-        'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Foot'}
-DEGC = {'name': 'Degree Celsius',
-        'symbol': 'degC',
-        'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius'}
-
-PPM = {'name': 'Parts Per Million',
-       'symbol': 'PPM',
-       'definition': 'http://www.qudt.org/qudt/owl/1.0.0'}
+from petltest.models import BaseModel, FOOT, DEGC
 
 WATER_HEAD = BaseModel('WaterHead', 'WaterHead',
                        {'description': 'Water Head above sensor',
@@ -63,7 +45,7 @@ WATER_TEMPERATURE = BaseModel('WaterTemperature', 'TemperatureWater',
                                }
                               )
 
-WATER_CONDUCTIVITY = BaseModel('WaterConductivity', 'CONDDL',
+WATER_CONDUCTIVITY = BaseModel('WaterConductivity', 'CONDDL (mS/cm)',
                                {'description': 'Electrical conductivity of the water',
                                 'definition': 'No Definition'},
                                {'name': 'Water Conductivity DS',
@@ -96,23 +78,6 @@ AIR_TEMPERATURE = BaseModel('AirTemperature', 'TemperatureAir',
                              }
                             )
 
-ARSENIC = BaseModel('Arsenic', 'Arsenic',
-                    {'description': 'Arsenic',
-                     'definition': 'No Definition'},
-                    {'name': 'Arsenic DS',
-                     'description': 'Datastream for Arsenic',
-                     'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                     'unitOfMeasurement': PPM
-                     }
-                    )
 
-CA = BaseModel('Calcium', 'Ca',
-               {'description': 'Calcium',
-                'definition': 'No Definition'},
-               {'name': 'Calcium DS',
-                'description': 'Datastream for Calcium',
-                'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                'unitOfMeasurement': PPM
-                }
-               )
+
 # ============= EOF =============================================

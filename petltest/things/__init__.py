@@ -15,6 +15,8 @@
 # ===============================================================================
 import json
 
+import requests
+
 
 def dump_thing_mapping(obj, path):
     if obj:
@@ -35,5 +37,19 @@ def make_thing(ld, column_mapping):
                                                         ld['LatitudeDD']]}
                            }]
             }
+
+def get_things():
+    things = {}
+
+    def _get(url):
+        resp = requests.get(url)
+        j = resp.json()
+        next = j['@iot.nextLink']
+        for v in j['value']:
+            things[v['name']] = v['@iot.id']
+        _get(next)
+
+    _get(f'{GOST_URL}/Things')
+    return things
 
 # ============= EOF =============================================

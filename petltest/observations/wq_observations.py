@@ -19,7 +19,7 @@ import petl
 
 from petltest import get_nm_quality_connection, make_id, post_item
 from petltest.datastreams import add_datastream
-from petltest.import_models import ARSENIC, CA
+from petltest.models.wq_models import ARSENIC, CA, CL, F, MG, NA, SO4
 from petltest.observations import get_datastream, MT_TIMEZONE
 from petltest.observed_properties import add_observed_property
 from petltest.sensors import add_sensor
@@ -44,13 +44,13 @@ def add_observations(datastream_id, wt, col):
 
         t = MT_TIMEZONE.localize(wti['CollectionDate'])
         v = wti[col]
-
-        payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),
-                   'resultTime': t.isoformat(timespec='milliseconds'),
-                   'result': v,
-                   'Datastream': make_id(datastream_id)
-                   }
-        post_item(f'Observations', payload)
+        if v is not None:
+            payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),
+                       'resultTime': t.isoformat(timespec='milliseconds'),
+                       'result': v,
+                       'Datastream': make_id(datastream_id)
+                       }
+            post_item(f'Observations', payload)
 
 
 def etl_wq_observations():
@@ -62,7 +62,7 @@ def etl_wq_observations():
                             'encodingType': 'application/pdf',
                             'metadata': 'foo'})
 
-    tags = [ARSENIC, CA,]
+    tags = [ARSENIC, CA, CL, F, MG, NA, SO4]
 
     observed_properties = {}
     # add the observed properties
@@ -72,14 +72,11 @@ def etl_wq_observations():
     for i, (point_id, thing_id) in enumerate(obj.items()):
         if i > 40:
             break
-        print(point_id)
-        # for table, column in (('Arsenic','Arsenic'),):
         for m in tags:
             wt = extract_species(point_id, m.name, m.mapped_column)
             nrows = petl.nrows(wt)
             if nrows:
                 print(f'Add {m.name} observations. count={nrows}')
-                print(wt)
                 if not get_datastream(thing_id, m.datastream_payload['name']):
                     ds_id = add_datastream(thing_id, observed_properties[m.name], sensor_id,
                                            m.datastream_payload)
