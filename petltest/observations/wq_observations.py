@@ -17,7 +17,7 @@ import json
 
 import petl
 
-from petltest import get_nm_quality_connection, make_id, post_item
+from petltest import nm_quality_connection, make_id, post_item, thing_generator
 from petltest.datastreams import add_datastream
 from petltest.models.wq_models import ARSENIC, CA, CL, F, MG, NA, SO4
 from petltest.observations import get_datastream, MT_TIMEZONE
@@ -25,14 +25,14 @@ from petltest.observed_properties import add_observed_property
 from petltest.sensors import add_sensor
 
 
-def extract_species(point_id,  table, column):
+def extract_species(point_id, table, column):
     sql = f'''select POINT_ID, CollectionDate, 
 {column}, WQ_{table}.Latitude, WQ_{table}.Longitude, {column}_Symbol, SiteNames 
 from dbo.WQ_{table} 
 join NM_Aquifer.dbo.Location on NM_Aquifer.dbo.Location.PointID = dbo.WQ_{table}.POINT_ID
 where PublicRelease=1 and POINT_ID=%s'''
 
-    table = petl.fromdb(get_nm_quality_connection(), sql, point_id)
+    table = petl.fromdb(nm_quality_connection(), sql, point_id)
     return table
 
 
@@ -53,26 +53,31 @@ def add_observations(datastream_id, wt, col):
             post_item(f'Observations', payload)
 
 
-def etl_wq_observations():
-    with open('wq_things_mapping.json', 'r') as rfile:
-        obj = json.load(rfile)
-
+def etl_wq_observations(tids=None, models=None):
     sensor_id = add_sensor('WaterChemistry',
                            {'description': 'NMBGMR WaterChemistry Lab',
                             'encodingType': 'application/pdf',
                             'metadata': 'foo'})
 
-    tags = [ARSENIC, CA, CL, F, MG, NA, SO4]
+    if models is None:
+        models = [ARSENIC, CA, CL, F, MG, NA, SO4]
 
     observed_properties = {}
     # add the observed properties
-    for m in tags:
+    for m in models:
         observed_properties[m.name] = add_observed_property(m.name, m.observed_property_payload)
 
-    for i, (point_id, thing_id) in enumerate(obj.items()):
-        if i > 40:
-            break
-        for m in tags:
+    # for i, (point_id, thing_id) in enumerate(obj.items()):
+    if tids is None:
+        tids = thing_generator('WaterChemistryAnalysis')
+    else:
+        if not isinstance(tids, (list, tuple)):
+            tids = (tids, )
+
+    for thing in tids:
+        thing_id = thing['@iot.id']
+        point_id = thing['@nmbgmr.point_id']
+        for m in models:
             wt = extract_species(point_id, m.name, m.mapped_column)
             nrows = petl.nrows(wt)
             if nrows:

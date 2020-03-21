@@ -19,6 +19,7 @@ from petltest import get_item_by_name
 
 MT_TIMEZONE = pytz.timezone('America/Denver')
 
+
 def get_datastream(thing_id, name):
     uri = f'Things({thing_id})/Datastreams'
     dsid = get_item_by_name(uri, name)

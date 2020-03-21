@@ -13,28 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-import json
-from os import environ
 
-import petl
-import pymssql
-import requests
+# from petltest.datastreams import delete_datastreams
+# from petltest.observations.wl_observations import etl_wl_observations
+# from petltest.things import get_things
+# from petltest.things.wl_things import etl_things as etl_wl_things
 
-from petltest.datastreams import delete_datastreams
-from petltest.observations.wl_observations import etl_wl_observations
 from petltest.observations.wq_observations import etl_wq_observations
-from petltest.things import get_things
-from petltest.things.wl_things import etl_things as etl_wl_things
 from petltest.things.wq_things import etl_things as etl_wq_things
 
+
 def main():
-    # etl_wq_things()
+
+    etl_wq_things(observation_hook=etl_wq_observations)
+
     # etl_wq_observations()
 
     # etl_wl_things()
     # delete_datastreams((1,2,3,4,5,6,7))
     # etl_wl_observations()
-    get_things()
+    # get_things()
 
 
 if __name__ == '__main__':
