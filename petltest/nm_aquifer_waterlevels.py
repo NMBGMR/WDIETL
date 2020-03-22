@@ -14,18 +14,23 @@
 # limitations under the License.
 # ===============================================================================
 
-# from petltest.datastreams import delete_datastreams
-# from petltest.observations.wl_observations import etl_wl_observations
-# from petltest.things import get_things
-# from petltest.things.wl_things import etl_things as etl_wl_things
-
+# water chem
 from petltest.observations.wq_observations import etl_wq_observations
-from petltest.things.wq_things import etl_things as etl_wq_things
+from petltest.things.wq_things import WaterChemThings
+
+# water levels
+# from petltest.things.wl_things import etl_things as etl_wl_things
+# from petltest.observations.wl_observations import etl_wl_observations
 
 
 def main():
+    wc = WaterChemThings()
+    wc.observation_hook = etl_wq_observations
+    wc.etl()
 
-    etl_wq_things(observation_hook=etl_wq_observations)
+
+    # etl_wq_things(observation_hook=etl_wq_observations)
+    # etl_wl_things(observation_hook=etl_wl_observations)
 
     # etl_wq_observations()
 

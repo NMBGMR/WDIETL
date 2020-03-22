@@ -20,87 +20,38 @@ import requests
 
 from petltest import nm_quality_connection, GOST_URL, post_item, get_item_by_name, get_items, ask
 from petltest.models.wq_models import ARSENIC, CA
-
-THING_NAME = 'WaterChemistryAnalysis'
-
-
-def extract_location(table, offset, n):
-    sql = f'''select POINT_ID, WQ_{table}.Latitude, WQ_{table}.Longitude, SiteNames, WellDepth from dbo.WQ_{table}
-join NM_Aquifer.dbo.Location on NM_Aquifer.dbo.Location.PointID = dbo.WQ_{table}.POINT_ID
-where PublicRelease=1
-order by POINT_ID offset %d rows fetch first %d rows only'''
-
-    table = petl.fromdb(nm_quality_connection(), sql, (offset, n))
-    return table
+from petltest.things.things import BaseThings
 
 
-def make_thing(ld, location_id):
-    return {'name': THING_NAME,
-            'description': 'Water Chemistry Analysis of a Well',
-            'properties': {'@nmbgmr.point_id': ld['POINT_ID']},
-            'Locations': [{'@iot.id': location_id}]}
+class WaterChemThings(BaseThings):
+    __thing_name__ = 'WaterChemistryAnalysis'
 
+    def extract(self, model):
+        table = model.name
+        sql = f'''select POINT_ID, WQ_{table}.Latitude, WQ_{table}.Longitude, SiteNames, WellDepth from dbo.WQ_{table}
+    join NM_Aquifer.dbo.Location on NM_Aquifer.dbo.Location.PointID = dbo.WQ_{table}.POINT_ID
+    where PublicRelease=1
+    order by POINT_ID offset %d rows fetch first %d rows only'''
 
-def make_location(ld):
-    return {'name': ld['POINT_ID'],
-            'description': ld['SiteNames'] or 'No Description',
-            'encodingType': 'application/vnd.geo+json',
-            'location': {'type': 'Point',
-                         'coordinates': [ld[f'Longitude'],
-                                         ld[f'Latitude']]}}
+        table = petl.fromdb(nm_quality_connection(), sql, (self.offset, self.n))
+        return table
 
+    def _make_tids(self, tid, record):
+        return {'@iot.id': tid,
+                '@nmbgmr.point_id': record['POINT_ID']},
 
-def load_things(dbtable, model, observation_hook=None):
-    for record in petl.dicts(dbtable):
-        post_thing(record, model, observation_hook)
+    def _make_location(self, record):
+        return {'name': record['POINT_ID'],
+                'description': record['SiteNames'] or 'No Description',
+                'encodingType': 'application/vnd.geo+json',
+                'location': {'type': 'Point',
+                             'coordinates': [record[f'Longitude'],
+                                             record[f'Latitude']]}}
 
+    def _make_thing(self, record, location_id):
+        return {'name': self.__thing_name__,
+                'description': 'Water Chemistry Analysis of a Well',
+                'properties': {'@nmbgmr.point_id': record['POINT_ID']},
+                'Locations': [{'@iot.id': location_id}]}
 
-def get_existing_thing(lid):
-    items = get_items(f'Locations({lid})?$expand=Things')
-    for i in items:
-        try:
-            for ti in i['Things']:
-                if ti['name'] == THING_NAME:
-                    return ti['@iot.id']
-        except KeyError:
-            continue
-
-
-def post_thing(record, model, observation_hook=None):
-    location = make_location(record)
-    location_id = get_item_by_name('Locations', location['name'])
-    if location_id is None:
-        location_id = post_item('Locations', location)
-    else:
-        print(f'location {location_id} already exists')
-
-    tid = get_existing_thing(location_id)
-    # dont add this thing if already exists at this location
-    if tid is None:
-        thing = make_thing(record, location_id)
-        tid = post_item('Things', thing)
-    else:
-        print(f'thing {tid} already exists')
-
-    if tid is not None:
-        if observation_hook:
-            observation_hook(tids=({'@iot.id': tid,
-                                    '@nmbgmr.point_id': record['POINT_ID']},),
-                             models=(model,))
-
-
-def etl_things(observation_hook=None):
-    offset = 0
-    n = 1
-
-    while 1:
-        for m in (ARSENIC, CA):
-            print(f'Importing water chem model: {m.name}')
-            location_table = extract_location(m.name, offset, n)
-            load_things(location_table, m, observation_hook)
-
-        offset += n
-
-        if not ask('Continue to next location batch y/[n]'):
-            return
 # ============= EOF =============================================

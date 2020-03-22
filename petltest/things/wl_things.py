@@ -18,16 +18,38 @@ import json
 import petl
 import requests
 
-from petltest import nm_aquifier_connection, GOST_URL, post_item, get_item_by_name
-from petltest.things import dump_thing_mapping
+from petltest import nm_aquifier_connection, GOST_URL, post_item, get_item_by_name, ask
+from petltest.models.wl_models import WATER_HEAD
+from petltest.things.things import BaseThings
 
 
-def extract_location():
-    sql = 'select Locationid, PointID, SiteNames, LatitudeDD, LongitudeDD  from dbo.Location' \
-          ' where PublicRelease=1 and LatitudeDD is not null'
-    table = petl.fromdb(nm_aquifier_connection(), sql)
-    return table
+class WaterLevelPressureThings(BaseThings):
+    __thing_name__ = 'WaterLevelPressure'
 
+    def extract(self, model):
+        sql = 'select Locationid, PointID, SiteNames, LatitudeDD, LongitudeDD  from dbo.Location' \
+              ' where PublicRelease=1 and LatitudeDD is not null' \
+              'order by PointID offset %d rows fetch %d rows only'
+        table = petl.fromdb(nm_aquifier_connection(), sql, (self.offset, self.n))
+        return table
+
+    def _make_location(self, record):
+        return {'name': record['SiteNames'] or 'No Name',
+                'description': 'No Description',
+                'encodingType': 'application/vnd.geo+json',
+                'location': {'type': 'Point',
+                             'coordinates': [record['LongitudeDD'],
+                                             record['LatitudeDD']]}}
+
+    def _make_thing(self, record, location_id):
+        return {'name': self.__thing_name__,
+                'description': 'Water Well',
+                'properties': {},
+                'Locations': [{'@iot.id': location_id}]}
+
+
+# class WaterLevelAcousticThings(BaseThings):
+#     pass
 
 # @todo: refactor following wq_things
 # def make_thing(ld):
@@ -44,9 +66,14 @@ def extract_location():
 #             }
 #
 #
-# def load_things(table):
-#     # create a point_id: @iot.thing.id mapping for convienence
-#     mapping = {}
+# def load_things(dbtable, model, observation_hook=None):
+#     for record in petl.dicts(dtable):
+#         post_thing(record, model, observation_hook)
+#
+#
+# def post_thing(record, model, observation_hook):
+#     location = make_location(record)
+#     location_id = get_item_by_name('Location', location['name'])
 #     for l in petl.dicts(table):
 #         thing = make_thing(l)
 #         if get_item_by_name('Things', thing['name']):
@@ -59,11 +86,9 @@ def extract_location():
 #             mapping[str(l['Locationid'])] = tid
 #
 #     return mapping
+
 #
 #
-# def etl_things():
-#     location_table = extract_location()
-#     thing_mapping = load_things(location_table)
-#     dump_thing_mapping(thing_mapping, 'wl_thing_mapping')
+
 
 # ============= EOF =============================================
