@@ -21,72 +21,68 @@ from petltest import nm_quality_connection, make_id, post_item, thing_generator
 from petltest.datastreams import add_datastream
 from petltest.models.wq_models import ARSENIC, CA, CL, F, MG, NA, SO4
 from petltest.observations import get_datastream, MT_TIMEZONE
+from petltest.observations.observations import BaseObservations
 from petltest.observed_properties import add_observed_property
 from petltest.sensors import add_sensor
 
 
-def extract_species(point_id, table, column):
-    sql = f'''select POINT_ID, CollectionDate, 
-{column}, WQ_{table}.Latitude, WQ_{table}.Longitude, {column}_Symbol, SiteNames 
-from dbo.WQ_{table} 
-join NM_Aquifer.dbo.Location on NM_Aquifer.dbo.Location.PointID = dbo.WQ_{table}.POINT_ID
-where PublicRelease=1 and POINT_ID=%s'''
+class WaterChemistryObservations(BaseObservations):
+    __models__ = (ARSENIC, CA, CL, F, MG, NA, SO4)
+    __thing_name__ = 'WaterChemistryAnalysis'
 
-    table = petl.fromdb(nm_quality_connection(), sql, point_id)
-    return table
+    def _add_sensor(self):
+        return add_sensor('WaterChemistry',
+                          {'description': 'NMBGMR WaterChemistry Lab',
+                           'encodingType': 'application/pdf',
+                           'metadata': 'foo'})
 
+    def _extract(self, point_id, model):
+        column = model.mapped_column
+        table = model.name
 
-def add_observations(datastream_id, wt, col):
-    for i, wti in enumerate(petl.dicts(wt)):
-        # make the observation
-        if i and not i % 100:
-            print(f'adding observation {i}')
+        sql = f'''select POINT_ID, CollectionDate, {column},  {column}_Symbol 
+        from dbo.WQ_{table} 
+        join NM_Aquifer.dbo.Location on NM_Aquifer.dbo.Location.PointID = dbo.WQ_{table}.POINT_ID
+        where PublicRelease=1 and POINT_ID=%s'''
 
-        t = MT_TIMEZONE.localize(wti['CollectionDate'])
-        v = wti[col]
-        if v is not None:
-            payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),
-                       'resultTime': t.isoformat(timespec='milliseconds'),
-                       'result': v,
-                       'Datastream': make_id(datastream_id)
-                       }
-            post_item(f'Observations', payload)
-
-
-def etl_wq_observations(tids=None, models=None):
-    sensor_id = add_sensor('WaterChemistry',
-                           {'description': 'NMBGMR WaterChemistry Lab',
-                            'encodingType': 'application/pdf',
-                            'metadata': 'foo'})
-
-    if models is None:
-        models = [ARSENIC, CA, CL, F, MG, NA, SO4]
-
-    observed_properties = {}
-    # add the observed properties
-    for m in models:
-        observed_properties[m.name] = add_observed_property(m.name, m.observed_property_payload)
-
-    # for i, (point_id, thing_id) in enumerate(obj.items()):
-    if tids is None:
-        tids = thing_generator('WaterChemistryAnalysis')
-    else:
-        if not isinstance(tids, (list, tuple)):
-            tids = (tids, )
-
-    for thing in tids:
-        thing_id = thing['@iot.id']
-        point_id = thing['@nmbgmr.point_id']
-        for m in models:
-            wt = extract_species(point_id, m.name, m.mapped_column)
-            nrows = petl.nrows(wt)
-            if nrows:
-                print(f'Add {m.name} observations. count={nrows}')
-                if not get_datastream(thing_id, m.datastream_payload['name']):
-                    ds_id = add_datastream(thing_id, observed_properties[m.name], sensor_id,
-                                           m.datastream_payload)
-
-                    # add observations to datastream
-                    add_observations(ds_id, wt, m.mapped_column)
+        table = petl.fromdb(nm_quality_connection(), sql, point_id)
+        return table
 
 # ============= EOF =============================================
+
+# def etl_wq_observations(tids=None, models=None):
+#     sensor_id = add_sensor('WaterChemistry',
+#                            {'description': 'NMBGMR WaterChemistry Lab',
+#                             'encodingType': 'application/pdf',
+#                             'metadata': 'foo'})
+#
+#     if models is None:
+#         models = [ARSENIC, CA, CL, F, MG, NA, SO4]
+#
+#     observed_properties = {}
+#     # add the observed properties
+#     for m in models:
+#         observed_properties[m.name] = add_observed_property(m.name, m.observed_property_payload)
+#
+#     # for i, (point_id, thing_id) in enumerate(obj.items()):
+#     if tids is None:
+#         tids = thing_generator('WaterChemistryAnalysis')
+#     else:
+#         if not isinstance(tids, (list, tuple)):
+#             tids = (tids,)
+#
+#     for thing in tids:
+#         thing_id = thing['@iot.id']
+#         point_id = thing['@nmbgmr.point_id']
+#         for m in models:
+#             wt = extract_species(point_id, m.name, m.mapped_column)
+#             nrows = petl.nrows(wt)
+#             if nrows:
+#                 print(f'Add {m.name} observations. count={nrows}')
+#                 if not get_datastream(thing_id, m.datastream_payload['name']):
+#                     ds_id = add_datastream(thing_id, observed_properties[m.name], sensor_id,
+#                                            m.datastream_payload)
+#
+#                     # add observations to datastream
+#                     add_observations(ds_id, wt, m.mapped_column)
+

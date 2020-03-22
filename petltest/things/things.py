@@ -15,7 +15,7 @@
 # ===============================================================================
 import petl
 
-from petltest import ask, post_item, get_items, get_item_by_name
+from petltest import ask, post_item, get_items, get_item_by_name, delete_item
 
 
 class BaseThings(object):
@@ -23,29 +23,41 @@ class BaseThings(object):
     n = 1
     observation_hook = None
     __thing_name__ = None
+    __models__ = None
 
     def etl(self):
         while 1:
-            for m in self._models:
+            for m in self.__models__:
                 print(f'Importing water level model: {m.name}')
-                location_table = self.extract_location(m)
-                self.load_location_things(location_table, m)
+                location_table = self.extract(m)
+                self.load_locations_things(location_table, m)
 
             self.offset += self.n
 
             if not ask('Continue to next location batch y/[n]'):
                 return
 
+    def delete_thing(self, tid):
+        delete_item(f'/Things({tid})')
+
+    def delete_location(self, tid):
+        delete_item(f'/Locations({tid})')
+
     def extract(self, model):
         raise NotImplementedError
 
     def load_locations_things(self, dbtable, model):
         for record in petl.dicts(dbtable):
-            location_id = self._post_location(record, model)
-            thing_id = self._post_thing(record, model, location_id)
-            if self.observation_hook:
-                self.observation_hook(tids=self._make_tids(record, thing_id),
-                                      models=(model,))
+            # does this thing have observations via given model
+            if self._has_observations(record):
+                location_id = self._post_location(record, model)
+                thing_id = self._post_thing(record, model, location_id)
+                if self.observation_hook:
+                    self.observation_hook(tids=self._make_tids(thing_id, record),
+                                          models=(model,))
+
+    def _has_observations(self, record):
+        raise NotImplementedError
 
     def _post_thing(self, record, model, location_id):
         thing_id = self._get_existing_thing(location_id)
@@ -56,7 +68,7 @@ class BaseThings(object):
             print(f'thing {thing_id} already exists')
         return thing_id
 
-    def _post_location(self, record, model, location_id):
+    def _post_location(self, record, model):
         location = self._make_location(record)
         location_id = get_item_by_name('Locations', location['name'])
         if location_id is None:
@@ -75,7 +87,7 @@ class BaseThings(object):
             except KeyError:
                 continue
 
-    def _make_tids(self, tid):
+    def _make_tids(self, tid, record):
         raise NotImplementedError
 
     def _make_location(self, record):

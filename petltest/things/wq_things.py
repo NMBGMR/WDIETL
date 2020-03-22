@@ -25,6 +25,7 @@ from petltest.things.things import BaseThings
 
 class WaterChemThings(BaseThings):
     __thing_name__ = 'WaterChemistryAnalysis'
+    __models__ = (ARSENIC, CA)
 
     def extract(self, model):
         table = model.name
@@ -35,6 +36,11 @@ class WaterChemThings(BaseThings):
 
         table = petl.fromdb(nm_quality_connection(), sql, (self.offset, self.n))
         return table
+
+    def _has_observations(self, record):
+        # since water chem table is easily joined with location table
+        # observation included in extract
+        return True
 
     def _make_tids(self, tid, record):
         return {'@iot.id': tid,

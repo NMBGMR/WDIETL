@@ -15,73 +15,78 @@
 # ===============================================================================
 from petltest.models import BaseModel, PPM
 
-ARSENIC = BaseModel('Arsenic', 'Arsenic',
-                    {'description': 'Arsenic',
-                     'definition': 'No Definition'},
-                    {'name': 'Arsenic DS',
-                     'description': 'Datastream for Arsenic',
-                     'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                     'unitOfMeasurement': PPM
-                     }
-                    )
 
-CA = BaseModel('Calcium', 'Ca',
-               {'description': 'Calcium',
-                'definition': 'No Definition'},
-               {'name': 'Calcium DS',
-                'description': 'Datastream for Calcium',
-                'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                'unitOfMeasurement': PPM
-                }
-               )
+class WQModel(BaseModel):
+    timestamp_column = 'CollectionTime'
 
-CL = BaseModel('Chlorine', 'Cl',
-               {'description': 'Chlorine',
-                'definition': 'No Definition'},
-               {'name': 'Chlorine DS',
-                'description': 'Datastream for Chlorine',
-                'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                'unitOfMeasurement': PPM
-                }
-               )
 
-F = BaseModel('Fluoride', 'F',
-              {'description': 'Fluoride',
+ARSENIC = WQModel('Arsenic', 'Arsenic',
+                  {'description': 'Arsenic',
+                   'definition': 'No Definition'},
+                  {'name': 'Arsenic DS',
+                   'description': 'Datastream for Arsenic',
+                   'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+                   'unitOfMeasurement': PPM
+                   }
+                  )
+
+CA = WQModel('Calcium', 'Ca',
+             {'description': 'Calcium',
+              'definition': 'No Definition'},
+             {'name': 'Calcium DS',
+              'description': 'Datastream for Calcium',
+              'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+              'unitOfMeasurement': PPM
+              }
+             )
+
+CL = WQModel('Chlorine', 'Cl',
+             {'description': 'Chlorine',
+              'definition': 'No Definition'},
+             {'name': 'Chlorine DS',
+              'description': 'Datastream for Chlorine',
+              'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+              'unitOfMeasurement': PPM
+              }
+             )
+
+F = WQModel('Fluoride', 'F',
+            {'description': 'Fluoride',
+             'definition': 'No Definition'},
+            {'name': 'Fluoride DS',
+             'description': 'Datastream for Fluoride',
+             'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+             'unitOfMeasurement': PPM
+             }
+            )
+
+MG = WQModel('Magnesium', 'Mg',
+             {'description': 'Magnesium',
+              'definition': 'No Definition'},
+             {'name': 'Magnesium DS',
+              'description': 'Datastream for Magnesium',
+              'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+              'unitOfMeasurement': PPM
+              }
+             )
+
+NA = WQModel('Sodium', 'Na',
+             {'description': 'Sodium',
+              'definition': 'No Definition'},
+             {'name': 'Sodium DS',
+              'description': 'Datastream for Sodium',
+              'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
+              'unitOfMeasurement': PPM
+              }
+             )
+
+SO4 = WQModel('Sulfate', 'SO4',
+              {'description': 'Sulfate',
                'definition': 'No Definition'},
-              {'name': 'Fluoride DS',
-               'description': 'Datastream for Fluoride',
+              {'name': 'Sulfate DS',
+               'description': 'Datastream for Sulfate',
                'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
                'unitOfMeasurement': PPM
                }
               )
-
-MG = BaseModel('Magnesium', 'Mg',
-               {'description': 'Magnesium',
-                'definition': 'No Definition'},
-               {'name': 'Magnesium DS',
-                'description': 'Datastream for Magnesium',
-                'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                'unitOfMeasurement': PPM
-                }
-               )
-
-NA = BaseModel('Sodium', 'Na',
-               {'description': 'Sodium',
-                'definition': 'No Definition'},
-               {'name': 'Sodium DS',
-                'description': 'Datastream for Sodium',
-                'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                'unitOfMeasurement': PPM
-                }
-               )
-
-SO4 = BaseModel('Sulfate', 'SO4',
-                {'description': 'Sulfate',
-                 'definition': 'No Definition'},
-                {'name': 'Sulfate DS',
-                 'description': 'Datastream for Sulfate',
-                 'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement',
-                 'unitOfMeasurement': PPM
-                 }
-                )
 # ============= EOF =============================================

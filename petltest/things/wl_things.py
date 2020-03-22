@@ -19,23 +19,53 @@ import petl
 import requests
 
 from petltest import nm_aquifier_connection, GOST_URL, post_item, get_item_by_name, ask
-from petltest.models.wl_models import WATER_HEAD
+from petltest.models.wl_models import WATER_HEAD, DEPTH_TO_WATER
 from petltest.things.things import BaseThings
 
 
 class WaterLevelPressureThings(BaseThings):
     __thing_name__ = 'WaterLevelPressure'
+    __models__ = (WATER_HEAD, DEPTH_TO_WATER)
+
+    # def find_test_waterlevels_pointid(self):
+    #     self.offset = 500
+    #     self.n = 10
+    #     while 1:
+    #         dbtable = self.extract(self.__models__[0])
+    #         for record in petl.dicts(dbtable):
+    #             sql = '''select count(PointID) from dbo.WaterLevelsContinuous_Pressure
+    #             where PointID=%d'''
+    #             table = petl.fromdb(nm_aquifier_connection(), sql, (record['PointID'],))
+    #
+    #             print(record['PointID'])
+    #             print(table)
+    #
+    #         self.offset += self.n
 
     def extract(self, model):
-        sql = 'select Locationid, PointID, SiteNames, LatitudeDD, LongitudeDD  from dbo.Location' \
-              ' where PublicRelease=1 and LatitudeDD is not null' \
-              'order by PointID offset %d rows fetch %d rows only'
-        table = petl.fromdb(nm_aquifier_connection(), sql, (self.offset, self.n))
+        sql = '''select PointID, SiteNames, LatitudeDD, LongitudeDD from dbo.Location
+              where PublicRelease=1 and LatitudeDD is not null
+              order by PointID offset %d rows fetch first %d rows only'''
+        # table = petl.fromdb(nm_aquifier_connection(), sql, (self.offset, self.n))
+
+        sql = '''select PointID, SiteNames, LatitudeDD, LongitudeDD from dbo.Location
+                      where PublicRelease=1 and PointID  in ('NM-00037', 'AB-0001') 
+                      '''
+        table = petl.fromdb(nm_aquifier_connection(), sql)
         return table
 
+    def _has_observations(self, record):
+        sql = '''select count(PointID) from dbo.WaterLevelsContinuous_Pressure
+        where PointID=%s'''
+        pid = record['PointID']
+        table = petl.fromdb(nm_aquifier_connection(), sql, (pid,))
+        nobs = petl.values(table, '')[0]
+        print(f'{pid} has nobs={nobs}')
+        return bool(nobs)
+
     def _make_location(self, record):
-        return {'name': record['SiteNames'] or 'No Name',
-                'description': 'No Description',
+        return {'name': record['PointID'],
+                'description': record['SiteNames'] or 'No Description',
                 'encodingType': 'application/vnd.geo+json',
                 'location': {'type': 'Point',
                              'coordinates': [record['LongitudeDD'],
@@ -44,14 +74,17 @@ class WaterLevelPressureThings(BaseThings):
     def _make_thing(self, record, location_id):
         return {'name': self.__thing_name__,
                 'description': 'Water Well',
-                'properties': {},
+                'properties': {'@nmbgmr.point_id': record['PointID']},
                 'Locations': [{'@iot.id': location_id}]}
 
+    def _make_tids(self, tid, record):
+        return {'@iot.id': tid,
+                '@nmbgmr.point_id': record['PointID']},
 
 # class WaterLevelAcousticThings(BaseThings):
 #     pass
 
-# @todo: refactor following wq_things
+# ============= EOF =============================================
 # def make_thing(ld):
 #     return {'name': ld['PointID'],
 #             'description': 'Water Well',
@@ -91,4 +124,3 @@ class WaterLevelPressureThings(BaseThings):
 #
 
 
-# ============= EOF =============================================

@@ -47,6 +47,11 @@ def nm_aquifier_connection():
     return connection
 
 
+def delete_item(uri):
+    resp = requests.delete(f'{GOST_URL}/{uri}')
+    print(f'delete thing {resp.status_code}')
+
+
 def post_item(uri, payload):
     resp = requests.post(f'{GOST_URL}/{uri}', json=payload)
     if resp.status_code == 201:

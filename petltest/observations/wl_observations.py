@@ -24,10 +24,32 @@ from petltest.datastreams import add_datastream
 from petltest.models.wl_models import WATER_HEAD, WATER_HEAD_ADJUSTED, WATER_TEMPERATURE, WATER_CONDUCTIVITY, \
     DEPTH_TO_WATER, AIR_TEMPERATURE
 from petltest.observations import get_datastream, MT_TIMEZONE
+from petltest.observations.observations import BaseObservations
 from petltest.observed_properties import add_observed_property
 from petltest.sensors import add_sensor
 
 
+class WaterLevelPressureObservations(BaseObservations):
+    __models__ = (WATER_HEAD, DEPTH_TO_WATER)
+
+    def _add_sensor(self):
+        return add_sensor('WaterLevel_Pressure',
+                          {'description': 'Diver Pressure Sensor',
+                           'encodingType': 'application/pdf',
+                           'metadata': 'foo'})
+
+    def _extract(self, point_id, model):
+        sql = f'''select DateMeasured, {model.mapped_column}
+        from dbo.WaterLevelsContinuous_Pressure
+        join dbo.Location on dbo.Location.PointID = dbo.WaterLevelsContinuous_Pressure.PointID
+        where dbo.Location.PointID = %d and QCed=1 
+        '''
+
+        table = petl.fromdb(nm_aquifier_connection(), sql, (point_id,))
+        return petl.sort(table, 'DateMeasured')
+
+
+# ============= EOF =============================================
 # @todo: refactor to  wq style
 # def extract_waterlevels_continuous(sensor, lid):
 #     if sensor == 'Pressure':
@@ -123,4 +145,4 @@ from petltest.sensors import add_sensor
 #                             # add observations to datastream
 #                             add_observations(ds_id, wt, m.mapped_column)
 
-# ============= EOF =============================================
+

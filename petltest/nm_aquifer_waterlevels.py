@@ -15,7 +15,9 @@
 # ===============================================================================
 
 # water chem
+from petltest.observations.wl_observations import WaterLevelPressureObservations
 from petltest.observations.wq_observations import etl_wq_observations
+from petltest.things.wl_things import WaterLevelPressureThings
 from petltest.things.wq_things import WaterChemThings
 
 # water levels
@@ -24,20 +26,23 @@ from petltest.things.wq_things import WaterChemThings
 
 
 def main():
-    wc = WaterChemThings()
-    wc.observation_hook = etl_wq_observations
-    wc.etl()
+    # ====== water chem =====
+    # wc = WaterChemThings()
+    # wc.observation_hook = etl_wq_observations
+    # wc.etl()
+    # =======================
 
+    # ==== water levels =====
+    wl = WaterLevelPressureThings()
+    wl.observation_hook = WaterLevelPressureObservations().etl
+    wl.etl()
 
-    # etl_wq_things(observation_hook=etl_wq_observations)
-    # etl_wl_things(observation_hook=etl_wl_observations)
+    # wl.delete_location(3)
+    # wl.delete_thing(2)
+    # wl.delete_thing(3)
+    # =======================
 
-    # etl_wq_observations()
-
-    # etl_wl_things()
-    # delete_datastreams((1,2,3,4,5,6,7))
-    # etl_wl_observations()
-    # get_things()
+    # wl.find_test_waterlevels_pointid()
 
 
 if __name__ == '__main__':
