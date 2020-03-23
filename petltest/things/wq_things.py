@@ -19,13 +19,16 @@ import petl
 import requests
 
 from petltest import nm_quality_connection, GOST_URL, post_item, get_item_by_name, get_items, ask
-from petltest.models.wq_models import ARSENIC, CA
+from petltest.models.wq_models import ARSENIC, CA, DEFAULT_MODELS
 from petltest.things.things import BaseThings
 
 
 class WaterChemThings(BaseThings):
     __thing_name__ = 'WaterChemistryAnalysis'
+    # __models__ = DEFAULT_MODELS
     __models__ = (ARSENIC, CA)
+
+    id = 'waterchem'
 
     def extract(self, model):
         table = model.name

@@ -19,7 +19,7 @@ import petl
 
 from petltest import nm_quality_connection, make_id, post_item, thing_generator
 from petltest.datastreams import add_datastream
-from petltest.models.wq_models import ARSENIC, CA, CL, F, MG, NA, SO4
+from petltest.models.wq_models import ARSENIC, CA, CL, F, MG, NA, SO4, DEFAULT_MODELS
 from petltest.observations import get_datastream, MT_TIMEZONE
 from petltest.observations.observations import BaseObservations
 from petltest.observed_properties import add_observed_property
@@ -27,7 +27,7 @@ from petltest.sensors import add_sensor
 
 
 class WaterChemistryObservations(BaseObservations):
-    __models__ = (ARSENIC, CA, CL, F, MG, NA, SO4)
+    __models__ = DEFAULT_MODELS
     __thing_name__ = 'WaterChemistryAnalysis'
 
     def _add_sensor(self):
@@ -36,16 +36,17 @@ class WaterChemistryObservations(BaseObservations):
                            'encodingType': 'application/pdf',
                            'metadata': 'foo'})
 
-    def _extract(self, point_id, model):
+    def _extract(self, point_id, model, skip):
         column = model.mapped_column
         table = model.name
 
         sql = f'''select POINT_ID, CollectionDate, {column},  {column}_Symbol 
         from dbo.WQ_{table} 
         join NM_Aquifer.dbo.Location on NM_Aquifer.dbo.Location.PointID = dbo.WQ_{table}.POINT_ID
-        where PublicRelease=1 and POINT_ID=%s'''
+        where PublicRelease=1 and POINT_ID=%s
+        order by CollectionDate offset %d rows'''
 
-        table = petl.fromdb(nm_quality_connection(), sql, point_id)
+        table = petl.fromdb(nm_quality_connection(), sql, (point_id, skip))
         return table
 
 # ============= EOF =============================================

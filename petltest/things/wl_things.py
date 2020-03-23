@@ -26,32 +26,14 @@ from petltest.things.things import BaseThings
 class WaterLevelPressureThings(BaseThings):
     __thing_name__ = 'WaterLevelPressure'
     __models__ = (WATER_HEAD, DEPTH_TO_WATER)
-
-    # def find_test_waterlevels_pointid(self):
-    #     self.offset = 500
-    #     self.n = 10
-    #     while 1:
-    #         dbtable = self.extract(self.__models__[0])
-    #         for record in petl.dicts(dbtable):
-    #             sql = '''select count(PointID) from dbo.WaterLevelsContinuous_Pressure
-    #             where PointID=%d'''
-    #             table = petl.fromdb(nm_aquifier_connection(), sql, (record['PointID'],))
-    #
-    #             print(record['PointID'])
-    #             print(table)
-    #
-    #         self.offset += self.n
+    id = 'waterlevelpressure'
 
     def extract(self, model):
         sql = '''select PointID, SiteNames, LatitudeDD, LongitudeDD from dbo.Location
               where PublicRelease=1 and LatitudeDD is not null
               order by PointID offset %d rows fetch first %d rows only'''
-        # table = petl.fromdb(nm_aquifier_connection(), sql, (self.offset, self.n))
 
-        sql = '''select PointID, SiteNames, LatitudeDD, LongitudeDD from dbo.Location
-                      where PublicRelease=1 and PointID  in ('NM-00037', 'AB-0001') 
-                      '''
-        table = petl.fromdb(nm_aquifier_connection(), sql)
+        table = petl.fromdb(nm_aquifier_connection(), sql, (self.offset, self.n))
         return table
 
     def _has_observations(self, record):
@@ -122,5 +104,19 @@ class WaterLevelPressureThings(BaseThings):
 
 #
 #
+# def find_test_waterlevels_pointid(self):
+    #     self.offset = 500
+    #     self.n = 10
+    #     while 1:
+    #         dbtable = self.extract(self.__models__[0])
+    #         for record in petl.dicts(dbtable):
+    #             sql = '''select count(PointID) from dbo.WaterLevelsContinuous_Pressure
+    #             where PointID=%d'''
+    #             table = petl.fromdb(nm_aquifier_connection(), sql, (record['PointID'],))
+    #
+    #             print(record['PointID'])
+    #             print(table)
+    #
+    #         self.offset += self.n
 
 

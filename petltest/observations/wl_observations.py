@@ -38,16 +38,15 @@ class WaterLevelPressureObservations(BaseObservations):
                            'encodingType': 'application/pdf',
                            'metadata': 'foo'})
 
-    def _extract(self, point_id, model):
+    def _extract(self, point_id, model, skip):
         sql = f'''select DateMeasured, {model.mapped_column}
         from dbo.WaterLevelsContinuous_Pressure
         join dbo.Location on dbo.Location.PointID = dbo.WaterLevelsContinuous_Pressure.PointID
         where dbo.Location.PointID = %d and QCed=1 
+        order by DateMeasured offset %d rows
         '''
 
-        table = petl.fromdb(nm_aquifier_connection(), sql, (point_id,))
-        return petl.sort(table, 'DateMeasured')
-
+        return petl.fromdb(nm_aquifier_connection(), sql, (point_id, skip))
 
 # ============= EOF =============================================
 # @todo: refactor to  wq style
@@ -144,5 +143,3 @@ class WaterLevelPressureObservations(BaseObservations):
 #                         if ds_id and add_obs:
 #                             # add observations to datastream
 #                             add_observations(ds_id, wt, m.mapped_column)
-
-

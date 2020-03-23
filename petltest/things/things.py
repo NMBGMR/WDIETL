@@ -13,7 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
+import os
+
 import petl
+import yaml
 
 from petltest import ask, post_item, get_items, get_item_by_name, delete_item
 
@@ -24,18 +27,23 @@ class BaseThings(object):
     observation_hook = None
     __thing_name__ = None
     __models__ = None
+    id = None
+    _added = False
 
     def etl(self):
+        self._read_persist()
         while 1:
+            self._added = False
             for m in self.__models__:
                 print(f'Importing water level model: {m.name}')
                 location_table = self.extract(m)
                 self.load_locations_things(location_table, m)
 
             self.offset += self.n
-
-            if not ask('Continue to next location batch y/[n]'):
-                return
+            self._write_persist()
+            if self._added:
+                if not ask('Continue to next location batch y/[n]'):
+                    return
 
     def delete_thing(self, tid):
         delete_item(f'/Things({tid})')
@@ -50,11 +58,26 @@ class BaseThings(object):
         for record in petl.dicts(dbtable):
             # does this thing have observations via given model
             if self._has_observations(record):
+                self._added = True
                 location_id = self._post_location(record, model)
                 thing_id = self._post_thing(record, model, location_id)
                 if self.observation_hook:
-                    self.observation_hook(tids=self._make_tids(thing_id, record),
-                                          models=(model,))
+                    self._added = self.observation_hook(tids=self._make_tids(thing_id, record),
+                                                        models=(model,))
+
+    def _read_persist(self):
+        if os.path.isfile(self._persistence_path):
+            with open(self._persistence_path, 'r') as rfile:
+                yd = yaml.load(rfile)
+                self.offset = yd.get('offset', 0)
+
+    def _write_persist(self):
+        with open(self._persistence_path, 'w') as wfile:
+            yaml.dump({'offset': self.offset}, wfile)
+
+    @property
+    def _persistence_path(self):
+        return f'{self.id}_persistence.yaml'
 
     def _has_observations(self, record):
         raise NotImplementedError
@@ -95,6 +118,5 @@ class BaseThings(object):
 
     def _make_thing(self, record, location_id):
         raise NotImplementedError
-
 
 # ============= EOF =============================================

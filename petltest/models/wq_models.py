@@ -89,4 +89,7 @@ SO4 = WQModel('Sulfate', 'SO4',
                'unitOfMeasurement': PPM
                }
               )
+
+
+DEFAULT_MODELS = (ARSENIC, CA, CL, F, MG, NA, SO4)
 # ============= EOF =============================================

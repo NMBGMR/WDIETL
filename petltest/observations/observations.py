@@ -14,10 +14,11 @@
 # limitations under the License.
 # ===============================================================================
 import petl
+from tqdm import tqdm
 
 from petltest import post_item, make_id, thing_generator
 from petltest.datastreams import add_datastream
-from petltest.observations import get_datastream, MT_TIMEZONE
+from petltest.observations import get_datastream, MT_TIMEZONE, get_nobservations
 from petltest.observed_properties import add_observed_property
 
 
@@ -44,32 +45,42 @@ class BaseObservations(object):
             if not isinstance(tids, (list, tuple)):
                 tids = (tids,)
 
+        added = False
         for thing in tids:
             thing_id = thing['@iot.id']
             point_id = thing['@nmbgmr.point_id']
             for m in models:
-                wt = self._extract(point_id, m)
+                print(f'Add {m.name}')
+                ds_id = get_datastream(thing_id, m.datastream_payload['name'])
+
+                skip_nobs = 0
+                if ds_id:
+                    # check the number of obs for this datastream matches nrows
+                    skip_nobs = get_nobservations(ds_id)
+                    if skip_nobs:
+                        print(f'Skipping nobs={skip_nobs}')
+
+                wt = self._extract(point_id, m, skip_nobs)
                 nrows = petl.nrows(wt)
                 if nrows:
-                    print(f'Add {m.name} observations. count={nrows}')
-                    if not get_datastream(thing_id, m.datastream_payload['name']):
+                    added = True
+                    print(f'Adding nobs={nrows}')
+                    if not ds_id:
                         ds_id = add_datastream(thing_id,
                                                self._observed_properties[m.name],
                                                self._sensor_id,
                                                m.datastream_payload)
 
-                        # add observations to datastream
-                        self._add_observations(ds_id, wt, m)
+                    # add observations to datastream
+                    self._add_observations(ds_id, wt, m)
 
-    def _extract(self, point_id, model):
+        return added
+
+    def _extract(self, point_id, model, skip):
         raise NotImplementedError
 
     def _add_observations(self, datastream_id, records, model):
-        for i, wti in enumerate(petl.dicts(records)):
-            # make the observation
-            if i and not i % 100:
-                print(f'adding observation {i}')
-
+        for wti in tqdm(petl.dicts(records)):
             t = MT_TIMEZONE.localize(wti[model.timestamp_column])
             v = wti[model.mapped_column]
             if v is not None:
@@ -80,3 +91,29 @@ class BaseObservations(object):
                            }
                 post_item(f'Observations', payload)
 # ============= EOF =============================================
+# wt = self._extract(point_id, m)
+# nrows = petl.nrows(wt)
+# if nrows:
+#     print(f'Add {m.name} observations. count={nrows}')
+#     ds_id = get_datastream(thing_id, m.datastream_payload['name'])
+#
+#     skip_obs = 0
+#     add_obs = False
+#     if ds_id:
+#         # check the number of obs for this datastream matches nrows
+#         nobs = get_nobservations(ds_id)
+#         if nobs != nrows:
+#             print(f'Nobs {nobs} not equal to NRows {nrows}')
+#             add_obs = True
+#             skip_obs = nobs
+#
+#     else:
+#         add_obs = True
+#         ds_id = add_datastream(thing_id,
+#                                self._observed_properties[m.name],
+#                                self._sensor_id,
+#                                m.datastream_payload)
+#
+#     if add_obs:
+#         # add observations to datastream
+#         self._add_observations(ds_id, wt, m, skip_obs)
