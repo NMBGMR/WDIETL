@@ -1,0 +1,6 @@
+pymssql
+pyyaml
+pytz
+tqdm
+ckanapi
+petl

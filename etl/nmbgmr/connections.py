@@ -15,8 +15,16 @@
 # ===============================================================================
 import pymssql
 
-from etl.nmbgmr.config import db_configs
+from os import environ
 
+db_configs = {'nm_aquifer': {'database': 'NM_Aquifer',
+                             'user': environ.get('DB_USER'),
+                             'password': environ.get('DB_PWD'),
+                             'server': environ.get('DB_HOST')},
+              'nm_water_quality': {'database': 'NM_Water_Quality',
+                                   'user': environ.get('DB_USER'),
+                                   'password': environ.get('DB_PWD'),
+                                   'server': environ.get('DB_HOST')}}
 
 def nm_quality_connection():
     config = db_configs['nm_water_quality']

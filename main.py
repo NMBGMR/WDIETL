@@ -13,16 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
+import argparse
+
 from etl.etl_runner import ETLRunner
-import sys
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('command')
+    parser.add_argument('root')
+
+    args = parser.parse_args()
+
+    st = ETLRunner()
+    st.welcome()
+    f = getattr(st, args.command)
+    f(args.root)
 
 
 if __name__ == '__main__':
-    st = ETLRunner()
-    try:
-        root = sys.argv[1]
-        print('root', root)
-        st.run(root)
-    except IndexError:
-        pass
+    main()
+
 # ============= EOF =============================================

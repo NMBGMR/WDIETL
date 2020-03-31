@@ -14,18 +14,20 @@
 # limitations under the License.
 # ===============================================================================
 import os
+import pprint
 
 import petl
 import yaml
 
-from etl.celery import app
+#from etl.celery import app
+#@app.task
 
 
-@app.task
 def statom(config, record_id):
     instance = make_instance(config)
-    print(f'etling {instance}, {record_id}')
+    print(f'======= starting etl {instance}, {record_id}')
     instance.etl(record_id)
+    print('======= etl complete')
 
 
 def make_instance(config):
@@ -38,8 +40,24 @@ def make_instance(config):
 
 
 class ETLRunner:
+    def welcome(self):
+        print('=========== ETL Runner ==================================')
+        print('Welcome to ETL Runner version 0.0 by Jake Ross 2020')
+        print('=========================================================\n\n')
+
+    def report(self, root):
+        config = self._get_config(root)
+        print('======== Config =========')
+        print('--------- config.yaml')
+        print(f'root: {root}')
+        pprint.pprint(config)
+        print('--------- Environment')
+        print(f'DB_HOST: {os.environ.get("DB_HOST")}')
+        print(f'DB_USER: {os.environ.get("DB_USER")}')
+        print('=========================')
 
     def run(self, root):
+        self.report(root)
         # open the config file
         # get the list of record identifiers to import
 
