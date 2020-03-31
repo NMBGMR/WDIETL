@@ -14,8 +14,15 @@
 # limitations under the License.
 # ===============================================================================
 from etl.etl_runner import ETLRunner
+import sys
+
 
 if __name__ == '__main__':
     st = ETLRunner()
-    st.run('etl/nmbgmr')
+    try:
+        root = sys.argv[1]
+        print('root', root)
+        st.run(root)
+    except IndexError:
+        pass
 # ============= EOF =============================================

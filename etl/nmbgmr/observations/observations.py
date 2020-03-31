@@ -115,8 +115,7 @@ class BaseObservations(STBase):
         return dsid
 
     def _add_observations(self, datastream_id, records, model):
-        # for wti in tqdm(petl.dicts(records)):
-        for wti in petl.dicts(records):
+        for wti in tqdm(petl.dicts(records)):
             t = MT_TIMEZONE.localize(wti[model.timestamp_column])
             v = wti[model.mapped_column]
             if v is not None:

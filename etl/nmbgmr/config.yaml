@@ -1,4 +1,3 @@
 instance: WaterLevelPressureAtom
-#gost_url: 'http://localhost:8080/v1.0/'
-gost_url: 'http://104.196.225.45/v1.0/'
+gost_url: 'http://localhost:8080/v1.0/'
 ckan_url: 'http://localhost'
