@@ -13,28 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-import json
-
 import petl
-import requests
 
-from petltest import nm_aquifier_connection, GOST_URL, post_item, get_item_by_name, ask
-from petltest.models.wl_models import WATER_HEAD, DEPTH_TO_WATER
-from petltest.things.things import BaseThings
+from etl.nmbgmr.atoms.base import Atom
+from etl.nmbgmr.connections import nm_aquifier_connection
+from etl.nmbgmr.models.wl_models import WATER_HEAD, DEPTH_TO_WATER
+from etl.nmbgmr.observations.wl_observations import WaterLevelPressureObservations
 
 
-class WaterLevelPressureThings(BaseThings):
+class WaterLevelPressureAtom(Atom):
     __thing_name__ = 'WaterLevelPressure'
     __models__ = (WATER_HEAD, DEPTH_TO_WATER)
+    __observation_klass__ = WaterLevelPressureObservations
+
     id = 'waterlevelpressure'
 
-    def extract(self, model):
+    def extract(self, model, record_id):
         sql = '''select PointID, SiteNames, LatitudeDD, LongitudeDD from dbo.Location
-              where PublicRelease=1 and LatitudeDD is not null
-              order by PointID offset %d rows fetch first %d rows only'''
+              where PublicRelease=1 and LatitudeDD is not null and PointID=%d'''
 
-        table = petl.fromdb(nm_aquifier_connection(), sql, (self.offset, self.n))
+        table = petl.fromdb(nm_aquifier_connection(), sql, (record_id,))
         return table
+
+    def _make_package(self, record):
+        extras = {'spatial': {'type': 'Point',
+                              'coordinates': [record['LongitudeDD'],record['LatitudeDD']]}}
+        point_id = record['PointID']
+
+        return {'name': f'{self.__thing_name__} {point_id}',
+                'extras': extras}
 
     def _has_observations(self, record):
         sql = '''select count(PointID) from dbo.WaterLevelsContinuous_Pressure
@@ -105,18 +112,16 @@ class WaterLevelPressureThings(BaseThings):
 #
 #
 # def find_test_waterlevels_pointid(self):
-    #     self.offset = 500
-    #     self.n = 10
-    #     while 1:
-    #         dbtable = self.extract(self.__models__[0])
-    #         for record in petl.dicts(dbtable):
-    #             sql = '''select count(PointID) from dbo.WaterLevelsContinuous_Pressure
-    #             where PointID=%d'''
-    #             table = petl.fromdb(nm_aquifier_connection(), sql, (record['PointID'],))
-    #
-    #             print(record['PointID'])
-    #             print(table)
-    #
-    #         self.offset += self.n
-
-
+#     self.offset = 500
+#     self.n = 10
+#     while 1:
+#         dbtable = self.extract(self.__models__[0])
+#         for record in petl.dicts(dbtable):
+#             sql = '''select count(PointID) from dbo.WaterLevelsContinuous_Pressure
+#             where PointID=%d'''
+#             table = petl.fromdb(nm_aquifier_connection(), sql, (record['PointID'],))
+#
+#             print(record['PointID'])
+#             print(table)
+#
+#         self.offset += self.n

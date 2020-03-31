@@ -13,31 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-import json
-
 import petl
-import requests
 
-from petltest import nm_quality_connection, GOST_URL, post_item, get_item_by_name, get_items, ask
-from petltest.models.wq_models import ARSENIC, CA, DEFAULT_MODELS
-from petltest.things.things import BaseThings
+from etl.nmbgmr.atoms.base import Atom
+from etl.nmbgmr.connections import nm_quality_connection
+from etl.nmbgmr.models.wq_models import ARSENIC, CA, DEFAULT_MODELS
+from etl.nmbgmr.observations.wq_observations import WaterChemistryObservations
 
 
-class WaterChemThings(BaseThings):
+class WaterChemAtom(Atom):
     __thing_name__ = 'WaterChemistryAnalysis'
-    # __models__ = DEFAULT_MODELS
-    __models__ = (ARSENIC, CA)
+    __models__ = DEFAULT_MODELS
+    __observation_klass = WaterChemistryObservations
 
     id = 'waterchem'
 
-    def extract(self, model):
+    def extract(self, model, record_id):
         table = model.name
         sql = f'''select POINT_ID, WQ_{table}.Latitude, WQ_{table}.Longitude, SiteNames, WellDepth from dbo.WQ_{table}
     join NM_Aquifer.dbo.Location on NM_Aquifer.dbo.Location.PointID = dbo.WQ_{table}.POINT_ID
-    where PublicRelease=1
-    order by POINT_ID offset %d rows fetch first %d rows only'''
+    where PublicRelease=1 and POINT_ID = %d'''
 
-        table = petl.fromdb(nm_quality_connection(), sql, (self.offset, self.n))
+        table = petl.fromdb(nm_quality_connection(), sql, record_id)
         return table
 
     def _has_observations(self, record):

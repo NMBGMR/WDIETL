@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-from petltest.models import BaseModel, PPM
+from etl.models import BaseModel, PPM
 
 
 class WQModel(BaseModel):
-    timestamp_column = 'CollectionTime'
+    timestamp_column = 'CollectionDate'
 
 
 ARSENIC = WQModel('Arsenic', 'Arsenic',

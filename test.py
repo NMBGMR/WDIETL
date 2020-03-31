@@ -13,20 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
+from etl.etl_runner import ETLRunner
 
-from petltest import post_item, get_item_by_name
-
-
-def add_observed_property(name, op):
-
-    # does this op already exist
-    op_id = get_item_by_name('ObservedProperties', name)
-    if op_id is None:
-        # add the op
-        op['name'] = name
-        op_id = post_item('ObservedProperties', op)
-
-    return op_id
-
-
+if __name__ == '__main__':
+    st = ETLRunner()
+    st.run('etl/nmbgmr')
 # ============= EOF =============================================

@@ -2,6 +2,8 @@
 ### JetBrains template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
+./celery_launcher.sh
+
 .idea/misc.xml
 .idea/modules.xml
 .idea/inspectionProfiles/profiles_settings.xml

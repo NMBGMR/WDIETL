@@ -14,15 +14,18 @@
 # limitations under the License.
 # ===============================================================================
 import petl
+import requests
 from tqdm import tqdm
+import pytz
 
-from petltest import post_item, make_id, thing_generator
-from petltest.datastreams import add_datastream
-from petltest.observations import get_datastream, MT_TIMEZONE, get_nobservations
-from petltest.observed_properties import add_observed_property
+from etl.st import make_id
+from etl.st.base import STBase
+
+MT_TIMEZONE = pytz.timezone('America/Denver')
 
 
-class BaseObservations(object):
+class BaseObservations(STBase):
+    ckan_importer = None
     _sensor_id = None
     _observed_properties = None
     __models__ = None
@@ -37,13 +40,10 @@ class BaseObservations(object):
         self._observed_properties = {}
         # add the observed properties
         for m in models:
-            self._observed_properties[m.name] = add_observed_property(m.name, m.observed_property_payload)
-
-        if tids is None:
-            tids = thing_generator(self.__thing_name__)
-        else:
-            if not isinstance(tids, (list, tuple)):
-                tids = (tids,)
+            payload = m.observed_property_payload
+            payload['name'] = m.name
+            self._observed_properties[m.name] = self._post_unique_item('ObservedProperties',
+                                                                       m.observed_property_payload)
 
         added = False
         for thing in tids:
@@ -51,12 +51,12 @@ class BaseObservations(object):
             point_id = thing['@nmbgmr.point_id']
             for m in models:
                 print(f'Add {m.name}')
-                ds_id = get_datastream(thing_id, m.datastream_payload['name'])
+                ds_id = self._get_datastream(thing_id, m.datastream_payload['name'])
 
                 skip_nobs = 0
                 if ds_id:
                     # check the number of obs for this datastream matches nrows
-                    skip_nobs = get_nobservations(ds_id)
+                    skip_nobs = self._get_nobservations(ds_id)
                     if skip_nobs:
                         print(f'Skipping nobs={skip_nobs}')
 
@@ -66,21 +66,57 @@ class BaseObservations(object):
                     added = True
                     print(f'Adding nobs={nrows}')
                     if not ds_id:
-                        ds_id = add_datastream(thing_id,
-                                               self._observed_properties[m.name],
-                                               self._sensor_id,
-                                               m.datastream_payload)
+                        ds_id = self._add_datastream(thing_id,
+                                                     self._observed_properties[m.name],
+                                                     self._sensor_id,
+                                                     m.datastream_payload)
+
+                        # r = self._make_resource(m)
+                        # self.ckan_importer.add_resource(r)
 
                     # add observations to datastream
                     self._add_observations(ds_id, wt, m)
 
         return added
 
+    def _add_sensor(self):
+        raise NotImplementedError
+
+    def _make_resource(self, model):
+        raise NotImplementedError
+
     def _extract(self, point_id, model, skip):
         raise NotImplementedError
 
+    def _add_datastream(self, thing_id, observed_property_id, sensor_id, ds_payload):
+        ds_payload['Thing'] = make_id(thing_id)
+        ds_payload['ObservedProperty'] = make_id(observed_property_id)
+        ds_payload['Sensor'] = make_id(sensor_id)
+
+        return self._post_item('Datastreams', ds_payload)
+
+    def _get_nobservations(self, datastream_id):
+        url = self._config.get('gost_url')
+        uri = f'{url}/Datastreams({datastream_id})/Observations?$top=1'
+        resp = requests.get(uri)
+        if resp.status_code == 200:
+            try:
+                n = int(resp.json()['@iot.count'])
+            except KeyError:
+                n = 0
+
+            return n
+
+    def _get_datastream(self, thing_id, name):
+        uri = f'Things({thing_id})/Datastreams'
+        dsid = self._get_item_by_name(uri, name)
+        if dsid is not None:
+            print(f'Datastream already exists skipping thing={thing_id}, ds={dsid}, name={name}')
+        return dsid
+
     def _add_observations(self, datastream_id, records, model):
-        for wti in tqdm(petl.dicts(records)):
+        # for wti in tqdm(petl.dicts(records)):
+        for wti in petl.dicts(records):
             t = MT_TIMEZONE.localize(wti[model.timestamp_column])
             v = wti[model.mapped_column]
             if v is not None:
@@ -89,7 +125,7 @@ class BaseObservations(object):
                            'result': v,
                            'Datastream': make_id(datastream_id)
                            }
-                post_item(f'Observations', payload)
+                self._post_item(f'Observations', payload)
 # ============= EOF =============================================
 # wt = self._extract(point_id, m)
 # nrows = petl.nrows(wt)

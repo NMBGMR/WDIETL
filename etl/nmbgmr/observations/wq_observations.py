@@ -13,17 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-import json
 
 import petl
 
-from petltest import nm_quality_connection, make_id, post_item, thing_generator
-from petltest.datastreams import add_datastream
-from petltest.models.wq_models import ARSENIC, CA, CL, F, MG, NA, SO4, DEFAULT_MODELS
-from petltest.observations import get_datastream, MT_TIMEZONE
-from petltest.observations.observations import BaseObservations
-from petltest.observed_properties import add_observed_property
-from petltest.sensors import add_sensor
+from etl.nmbgmr.connections import nm_quality_connection
+from etl.nmbgmr.models.wq_models import DEFAULT_MODELS
+from etl.nmbgmr.observations.observations import BaseObservations
 
 
 class WaterChemistryObservations(BaseObservations):
@@ -31,10 +26,11 @@ class WaterChemistryObservations(BaseObservations):
     __thing_name__ = 'WaterChemistryAnalysis'
 
     def _add_sensor(self):
-        return add_sensor('WaterChemistry',
+        return self._post_unique_item('Sensors',
                           {'description': 'NMBGMR WaterChemistry Lab',
                            'encodingType': 'application/pdf',
-                           'metadata': 'foo'})
+                           'metadata': 'foo',
+                           'name': 'WaterChemistry'})
 
     def _extract(self, point_id, model, skip):
         column = model.mapped_column

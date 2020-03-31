@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-from petltest.models import BaseModel, FOOT, DEGC
+from etl.models import BaseModel, FOOT, DEGC
 
 
 class WaterLevelModel(BaseModel):

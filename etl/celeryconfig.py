@@ -13,22 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-import requests
 
-from petltest import make_id, post_item, GOST_URL
-
-
-def add_datastream(thing_id, observed_property_id, sensor_id, ds_payload):
-    ds_payload['Thing'] = make_id(thing_id)
-    ds_payload['ObservedProperty'] = make_id(observed_property_id)
-    ds_payload['Sensor'] = make_id(sensor_id)
-
-    return post_item('Datastreams', ds_payload)
-
-
-def delete_datastreams(ds):
-    for di in ds:
-        resp = requests.delete(f'{GOST_URL}/Datastreams({di})')
-        print(f'deleting {di}, resp={resp.status_code}')
+imports = ('etl.etl_runner',)
 
 # ============= EOF =============================================

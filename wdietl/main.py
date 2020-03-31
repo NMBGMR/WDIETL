@@ -15,10 +15,13 @@
 # ===============================================================================
 
 # water chem
-from petltest.observations.wl_observations import WaterLevelPressureObservations
-from petltest.observations.wq_observations import WaterChemistryObservations
-from petltest.things.wl_things import WaterLevelPressureThings
-from petltest.things.wq_things import WaterChemThings
+from wdietl.ckan_importer import CKANImporter
+from wdietl.datastreams import datastream_generator
+from wdietl.observations.wl_observations import WaterLevelPressureObservations
+from wdietl.observations.wq_observations import WaterChemistryObservations
+from wdietl.things.wl_things import WaterLevelPressureThings
+from wdietl.things.wq_things import WaterChemThings
+
 
 # water levels
 # from petltest.things.wl_things import etl_things as etl_wl_things
@@ -26,16 +29,22 @@ from petltest.things.wq_things import WaterChemThings
 
 
 def main():
+    # ====== CKAN import ===
+    c = CKANImporter()
+    c.run_test()
+
     # ====== water chem =====
     # wc = WaterChemThings()
+    # wc.n = 3
     # wc.observation_hook = WaterChemistryObservations().etl
     # wc.etl()
     # =======================
 
     # ==== water levels =====
-    wl = WaterLevelPressureThings()
-    wl.observation_hook = WaterLevelPressureObservations().etl
-    wl.etl()
+    # wl = WaterLevelPressureThings()
+    # wl.n = 3
+    # wl.observation_hook = WaterLevelPressureObservations().etl
+    # wl.etl()
     # =======================
 
     # wl.delete_location(3)

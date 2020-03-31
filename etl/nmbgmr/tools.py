@@ -13,23 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
+import json
 
-class BaseModel():
-    def __init__(self, name, mapped_column, ob, ds):
-        self.name = name
-        self.mapped_column = mapped_column
-        self.observed_property_payload = ob
-        self.datastream_payload = ds
+import petl
+
+from nmbgmr.connections import nm_aquifier_connection
 
 
-FOOT = {'name': 'Foot',
-        'symbol': 'ft',
-        'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Foot'}
-DEGC = {'name': 'Degree Celsius',
-        'symbol': 'degC',
-        'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius'}
+def make_runlist():
+    sql = '''select DISTINCT Location.PointID from dbo.WaterLevelsContinuous_Pressure
+join dbo.Location on Location.PointID = dbo.WaterLevelsContinuous_Pressure.PointID
+where dbo.Location.LatitudeDD is not null and dbo.Location.PublicRelease=1
+group by Location.PointID
+order by Location.PointID'''
+    table = petl.fromdb(nm_aquifier_connection(), sql)
 
-PPM = {'name': 'Parts Per Million',
-       'symbol': 'PPM',
-       'definition': 'http://www.qudt.org/qudt/owl/1.0.0'}
+    obj = petl.tojson(table, 'record_ids.json', indent=2)
+    print(obj)
+
+
+if __name__ == '__main__':
+    make_runlist()
 # ============= EOF =============================================

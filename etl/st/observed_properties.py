@@ -13,17 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-from petltest import get_item_by_name, post_item
+
+# from wdietl import post_item, get_item_by_name
+#
+#
+# def add_observed_property(name, op):
+#
+#     # does this op already exist
+#     op_id = get_item_by_name('ObservedProperties', name)
+#     if op_id is None:
+#         # add the op
+#         op['name'] = name
+#         op_id = post_item('ObservedProperties', op)
+#
+#     return op_id
 
 
-def add_sensor(name, sensor):
-    # does this sensor already exist
-    sensor_id = get_item_by_name('Sensors', name)
-    if sensor_id is None:
-        sensor['name'] = name
-        # add the sensor
-        print('adding', sensor)
-        sensor_id = post_item('Sensors', sensor)
-
-    return sensor_id
 # ============= EOF =============================================
