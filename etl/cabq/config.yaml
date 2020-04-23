@@ -1,0 +1,6 @@
+instance: CABQReport
+#gost_url: 'http://localhost:8080/v1.0/'
+gost_url: 'http://104.196.225.45/v1.0/'
+ckan_url: 'http://localhost'
+src_path: 'etl/cabq/data/Water Levels Report.xlsx'
+vocab_path: 'etl/cabq/data/vocab.yaml'

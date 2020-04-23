@@ -14,40 +14,5 @@
 # limitations under the License.
 # ===============================================================================
 
-import requests
 
-
-def make_id(i):
-    return {'@iot.id': i}
-
-
-class ConfigBase(object):
-    def __init__(self, config):
-        self._config = config
-
-    def _get_items(self, starturl, callback=None):
-        items = []
-
-        def _get(u):
-            resp = requests.get(u)
-            j = resp.json()
-
-            if callback:
-                callback(items, j)
-            else:
-                try:
-                    items.extend(j['value'])
-                except KeyError:
-                    items.append(j)
-
-            try:
-                next = j['@iot.nextLink']
-            except KeyError:
-                return
-
-            _get(next)
-
-        url = self._config.get('gost_url')
-        _get(f'{url}/{starturl}')
-        return items
 # ============= EOF =============================================

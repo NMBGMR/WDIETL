@@ -19,8 +19,10 @@ import pprint
 import petl
 import yaml
 
-#from etl.celery import app
-#@app.task
+
+# from etl.celery import app
+# @app.task
+from etl.st.client import STClient
 
 
 def statom(config, record_id):
@@ -35,6 +37,9 @@ def make_instance(config):
     if klass == 'WaterLevelPressureAtom':
         from etl.nmbgmr.atoms.wl import WaterLevelPressureAtom
         klass = WaterLevelPressureAtom
+    elif klass == 'CABQReport':
+        from etl.cabq.cabqreport import CABQReport
+        klass = CABQReport
 
     return klass(config)
 
@@ -45,6 +50,7 @@ class ETLRunner:
         print('Welcome to ETL Runner version 0.0 by Jake Ross 2020')
         print('=========================================================\n\n')
 
+    # ============= commands =============
     def report(self, root):
         config = self._get_config(root)
         print('======== Config =========')
@@ -55,6 +61,17 @@ class ETLRunner:
         print(f'DB_HOST: {os.environ.get("DB_HOST")}')
         print(f'DB_USER: {os.environ.get("DB_USER")}')
         print('=========================')
+
+    def batch(self, root):
+        self.report(root)
+        config = self._get_config(root)
+
+        # just hard coding some batch editing now
+        # get all datastreams for WaterLevelsPressure
+        client = STClient(config)
+        new = {'description': 'WELL'}
+        for di in client.get_locations():
+            client.update_location(di['@iot.id'], new)
 
     def run(self, root):
         self.report(root)
@@ -73,6 +90,7 @@ class ETLRunner:
                 if i > 0:
                     break
 
+    # private
     def _get_record_identifiers(self, cfg):
         p = cfg.get('record_identifiers')
         if not (p and os.path.isfile(p)):

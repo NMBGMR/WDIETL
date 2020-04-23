@@ -1,0 +1,14 @@
+location:
+  name: sys_loc_code
+  description: loc_name
+  latitude: latitude
+  longitude: longitude
+thing:
+  name: WaterLevels
+observation:
+  time: measurement_date
+  result: water_depth
+sensor:
+  name: measurement_method
+  description:
+

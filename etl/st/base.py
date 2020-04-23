@@ -15,11 +15,10 @@
 # ===============================================================================
 import requests
 
+from etl.st import ConfigBase
 
-class STBase(object):
-    def __init__(self, config):
-        self._config = config
 
+class STBase(ConfigBase):
     def _post_unique_item(self, tag, payload):
         op_id = self._get_item_by_name(tag, payload['name'])
         if op_id is None:

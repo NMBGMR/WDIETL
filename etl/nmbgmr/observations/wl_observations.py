@@ -19,7 +19,7 @@ import petl
 from etl.nmbgmr.connections import nm_aquifier_connection
 from etl.nmbgmr.models.wl_models import WATER_HEAD, WATER_HEAD_ADJUSTED, WATER_TEMPERATURE, WATER_CONDUCTIVITY, \
     DEPTH_TO_WATER, AIR_TEMPERATURE
-from etl.nmbgmr.observations.observations import BaseObservations
+from etl.st.observations import BaseObservations
 
 
 class WaterLevelPressureObservations(BaseObservations):
@@ -32,7 +32,9 @@ class WaterLevelPressureObservations(BaseObservations):
                                        'metadata': 'foo',
                                        'name': 'WaterLevel_Pressure'})
 
-    def _extract(self, point_id, model, skip):
+    def _extract(self, thing, model, skip):
+        point_id = thing['@nmbgmr.point_id']
+
         sql = f'''select DateMeasured, {model.mapped_column}
         from dbo.WaterLevelsContinuous_Pressure
         join dbo.Location on dbo.Location.PointID = dbo.WaterLevelsContinuous_Pressure.PointID

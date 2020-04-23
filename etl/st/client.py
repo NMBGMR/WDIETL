@@ -13,41 +13,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
-
 import requests
 
-
-def make_id(i):
-    return {'@iot.id': i}
+from etl.st import ConfigBase
 
 
-class ConfigBase(object):
-    def __init__(self, config):
-        self._config = config
+class STClient(ConfigBase):
 
-    def _get_items(self, starturl, callback=None):
-        items = []
+    def update_location(self, location_id, new):
+        url = self._config.get('gost_url')
+        url = f'{url}/Locations({location_id})'
+        resp = requests.patch(url, json=new)
+        print('asdf', resp, resp.status_code)
 
+    def get_locations(self, expand=None):
+        start = self._make_url('Locations', expand)
+        return self._generator(start)
+
+    def get_datastreams(self, expand=None):
+        start = self._make_url('Datastreams', expand)
+        return self._generator(start)
+
+    def _make_url(self, start, expand):
+        if expand:
+            start = f'{start}?$expand={expand}'
+        return start
+
+    def _generator(self, start):
         def _get(u):
             resp = requests.get(u)
             j = resp.json()
-
-            if callback:
-                callback(items, j)
-            else:
-                try:
-                    items.extend(j['value'])
-                except KeyError:
-                    items.append(j)
+            for i in j['value']:
+                yield i
 
             try:
                 next = j['@iot.nextLink']
             except KeyError:
                 return
 
-            _get(next)
+            yield from _get(next)
 
         url = self._config.get('gost_url')
-        _get(f'{url}/{starturl}')
-        return items
+        yield from _get(f'{url}/{start}')
+
 # ============= EOF =============================================

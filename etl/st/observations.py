@@ -15,6 +15,7 @@
 # ===============================================================================
 import petl
 import requests
+from petl import data
 from tqdm import tqdm
 import pytz
 
@@ -48,27 +49,39 @@ class BaseObservations(STBase):
         added = False
         for thing in tids:
             thing_id = thing['@iot.id']
-            point_id = thing['@nmbgmr.point_id']
+            # point_id = thing['@nmbgmr.point_id']
             for m in models:
                 print(f'Add {m.name}')
                 ds_id = self._get_datastream(thing_id, m.datastream_payload['name'])
 
                 skip_nobs = 0
                 if ds_id:
+                    print(f'Got datastream  thing={thing_id}, ds={ds_id}')
                     # check the number of obs for this datastream matches nrows
                     skip_nobs = self._get_nobservations(ds_id)
                     if skip_nobs:
                         print(f'Skipping nobs={skip_nobs}')
 
-                wt = self._extract(point_id, m, skip_nobs)
-                nrows = petl.nrows(wt)
+                wt = self._extract(thing, m, skip_nobs)
+                if isinstance(wt, list):
+                    nrows = len(wt)
+                else:
+                    nrows = petl.nrows(wt)
+
                 if nrows:
                     added = True
                     print(f'Adding nobs={nrows}')
                     if not ds_id:
+                        print('Adding datastream')
+
+                        sensor_id = self._sensor_id
+                        if self._sensor_id is None:
+                            # extract the sensor from the first record
+                            sensor_id = self._add_sensor(wt)
+
                         ds_id = self._add_datastream(thing_id,
                                                      self._observed_properties[m.name],
-                                                     self._sensor_id,
+                                                     sensor_id,
                                                      m.datastream_payload)
 
                         # r = self._make_resource(m)
@@ -76,17 +89,26 @@ class BaseObservations(STBase):
 
                     # add observations to datastream
                     self._add_observations(ds_id, wt, m)
+                else:
+                    print('no obs to add')
 
         return added
 
-    def _add_sensor(self):
+    def set_records(self, records):
+        self._records = records
+
+    def _add_sensor(self, *args, **kw):
         raise NotImplementedError
 
     def _make_resource(self, model):
         raise NotImplementedError
 
-    def _extract(self, point_id, model, skip):
-        raise NotImplementedError
+    def _extract(self, thing, model, skip):
+        if self._records:
+            r = self._records[skip:]
+            return r
+        else:
+            raise NotImplementedError
 
     def _add_datastream(self, thing_id, observed_property_id, sensor_id, ds_payload):
         ds_payload['Thing'] = make_id(thing_id)
@@ -97,7 +119,7 @@ class BaseObservations(STBase):
 
     def _get_nobservations(self, datastream_id):
         url = self._config.get('gost_url')
-        uri = f'{url}/Datastreams({datastream_id})/Observations?$top=1'
+        uri = f'{url}/Datastreams({datastream_id})/Observations?$count=true&$top=1'
         resp = requests.get(uri)
         if resp.status_code == 200:
             try:
@@ -110,13 +132,21 @@ class BaseObservations(STBase):
     def _get_datastream(self, thing_id, name):
         uri = f'Things({thing_id})/Datastreams'
         dsid = self._get_item_by_name(uri, name)
-        if dsid is not None:
-            print(f'Datastream already exists skipping thing={thing_id}, ds={dsid}, name={name}')
+
         return dsid
 
+    def _timestamp_extract(self, t):
+        return t
+
     def _add_observations(self, datastream_id, records, model):
-        for wti in tqdm(petl.dicts(records)):
-            t = MT_TIMEZONE.localize(wti[model.timestamp_column])
+        if not isinstance(records, list):
+            records = petl.dicts(records)
+
+        for wti in tqdm(records):
+
+            t = self._timestamp_extract(wti[model.timestamp_column])
+
+            t = MT_TIMEZONE.localize(t)
             v = wti[model.mapped_column]
             if v is not None:
                 payload = {'phenomenonTime': t.isoformat(timespec='milliseconds'),

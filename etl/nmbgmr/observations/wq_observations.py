@@ -18,7 +18,7 @@ import petl
 
 from etl.nmbgmr.connections import nm_quality_connection
 from etl.nmbgmr.models.wq_models import DEFAULT_MODELS
-from etl.nmbgmr.observations.observations import BaseObservations
+from etl.st.observations import BaseObservations
 
 
 class WaterChemistryObservations(BaseObservations):
@@ -32,7 +32,8 @@ class WaterChemistryObservations(BaseObservations):
                            'metadata': 'foo',
                            'name': 'WaterChemistry'})
 
-    def _extract(self, point_id, model, skip):
+    def _extract(self, thing, model, skip):
+        point_id = thing['@nmbgmr.point_id']
         column = model.mapped_column
         table = model.name
 
